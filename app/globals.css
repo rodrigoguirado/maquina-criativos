@@ -2,51 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
 :root {
   --sz-blue: #0055FF;
   --sz-navy: #00143D;
   --sz-coral: #FC6058;
+  --sz-soft: #6593FF;
+  --sz-light: #E8F0FF;
 }
 
 body {
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  background: #f8fafc;
-  color: #2E2E2E;
+  font-family: 'Inter', 'Helvetica', sans-serif;
+  background: var(--sz-navy);
+  color: #fff;
 }
 
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 85, 255, 0.3); }
-  50% { box-shadow: 0 0 20px 6px rgba(0, 85, 255, 0.15); }
-}
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--sz-navy); }
+::-webkit-scrollbar-thumb { background: var(--sz-blue); border-radius: 3px; }
 
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.5s ease-out forwards;
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-@keyframes spin-slow {
-  to { transform: rotate(360deg); }
-}
-
-.animate-spin-slow {
-  animation: spin-slow 3s linear infinite;
-}
-
-.scrollbar-thin::-webkit-scrollbar {
-  width: 6px;
-}
-.scrollbar-thin::-webkit-scrollbar-track {
-  background: transparent;
-}
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
+/* Loading spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  width: 24px; height: 24px;
+  border: 3px solid rgba(255,255,255,0.2);
+  border-top-color: var(--sz-coral);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
