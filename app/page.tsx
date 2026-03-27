@@ -204,21 +204,18 @@ function VideoScript({ data, type }: { data: any; type: 'narrado' | 'monica' }) 
   )
 }
 
-/* ========== VIDEO GENERATOR (fal.ai Kling) with client-side polling ========== */
+/* ========== VIDEO GENERATOR (fal.ai Kling via SDK) ========== */
 function VideoGenerator({ prompt }: { prompt: string }) {
   const [generating, setGenerating] = useState(false)
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [statusMsg, setStatusMsg] = useState('')
 
   const generate = async () => {
     setGenerating(true)
     setError(null)
     setVideoUrl(null)
-    setStatusMsg('Enviando para fal.ai...')
 
     try {
-      // Submit job
       const res = await fetch('/api/generate-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -227,41 +224,11 @@ function VideoGenerator({ prompt }: { prompt: string }) {
       const data = await res.json()
       if (data.error) throw new Error(data.error)
 
-      if (data.status === 'COMPLETED' && data.url) {
+      if (data.url) {
         setVideoUrl(data.url)
-        setGenerating(false)
-        return
+      } else {
+        throw new Error('URL do vídeo não retornada')
       }
-
-      if (data.request_id) {
-        // Poll for completion
-        const reqId = data.request_id
-        let attempts = 0
-        while (attempts < 60) {
-          setStatusMsg(`Gerando vídeo... ${attempts * 3}s`)
-          await new Promise(r => setTimeout(r, 3000))
-          
-          const pollRes = await fetch('/api/generate-video', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ request_id: reqId }),
-          })
-          const pollData = await pollRes.json()
-
-          if (pollData.status === 'COMPLETED' && pollData.url) {
-            setVideoUrl(pollData.url)
-            setGenerating(false)
-            return
-          }
-          if (pollData.status === 'FAILED') {
-            throw new Error('Geração de vídeo falhou')
-          }
-          attempts++
-        }
-        throw new Error('Timeout — tente novamente')
-      }
-
-      throw new Error('Resposta inesperada')
     } catch (err: any) {
       setError(err.message)
     }
@@ -281,7 +248,7 @@ function VideoGenerator({ prompt }: { prompt: string }) {
       {generating && (
         <div className="flex items-center gap-3 py-8 justify-center">
           <div className="spinner" />
-          <span className="text-gray-400 text-sm">{statusMsg}</span>
+          <span className="text-gray-400 text-sm">Gerando vídeo com IA... pode levar 2-5 min</span>
         </div>
       )}
       {videoUrl && <video src={videoUrl} controls className="w-full rounded-lg max-h-[500px]" />}

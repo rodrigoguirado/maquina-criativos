@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export const maxDuration = 60
 
+const FAL_MODEL = 'fal-ai/kling-video/v1.6/standard/text-to-video'
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -13,48 +15,54 @@ export async function POST(req: NextRequest) {
 
     // === POLLING: check status of existing request ===
     if (body.request_id) {
+      const statusUrl = `https://queue.fal.run/${FAL_MODEL}/requests/${body.request_id}/status`
+      
+      const statusResp = await fetch(statusUrl, {
+        method: 'GET',
+        headers: { 
+          'Authorization': `Key ${falKey}`,
+          'Accept': 'application/json',
+        },
+      })
+
+      const statusText = await statusResp.text()
+      
+      let statusData
       try {
-        const statusResp = await fetch(
-          `https://queue.fal.run/requests/${body.request_id}/status`,
-          { 
-            method: 'GET',
-            headers: { 'Authorization': `Key ${falKey}` } 
-          }
-        )
-        
-        if (!statusResp.ok) {
-          const errText = await statusResp.text()
-          return NextResponse.json({ error: `Status check failed: ${statusResp.status} - ${errText.slice(0, 200)}` }, { status: 500 })
-        }
-
-        const statusData = await statusResp.json()
-
-        if (statusData.status === 'COMPLETED') {
-          // Fetch the result
-          const resultResp = await fetch(
-            `https://queue.fal.run/requests/${body.request_id}`,
-            { 
-              method: 'GET',
-              headers: { 'Authorization': `Key ${falKey}` } 
-            }
-          )
-          const resultData = await resultResp.json()
-          const videoUrl = resultData?.video?.url || resultData?.output?.video?.url
-          return NextResponse.json({ status: 'COMPLETED', url: videoUrl })
-        }
-
-        if (statusData.status === 'FAILED') {
-          return NextResponse.json({ status: 'FAILED', error: statusData.error || 'Geração falhou' })
-        }
-
-        // Still processing
-        return NextResponse.json({ 
-          status: statusData.status || 'IN_PROGRESS',
-          position: statusData.queue_position 
-        })
-      } catch (pollErr: any) {
-        return NextResponse.json({ error: `Poll error: ${pollErr.message}` }, { status: 500 })
+        statusData = JSON.parse(statusText)
+      } catch (e) {
+        return NextResponse.json({ error: `Invalid status response: ${statusText.slice(0, 200)}` }, { status: 500 })
       }
+
+      if (!statusResp.ok) {
+        return NextResponse.json({ error: `Status error ${statusResp.status}: ${JSON.stringify(statusData).slice(0, 200)}` }, { status: 500 })
+      }
+
+      if (statusData.status === 'COMPLETED') {
+        const resultUrl = `https://queue.fal.run/${FAL_MODEL}/requests/${body.request_id}`
+        const resultResp = await fetch(resultUrl, {
+          method: 'GET',
+          headers: { 
+            'Authorization': `Key ${falKey}`,
+            'Accept': 'application/json',
+          },
+        })
+        const resultText = await resultResp.text()
+        let resultData
+        try {
+          resultData = JSON.parse(resultText)
+        } catch (e) {
+          return NextResponse.json({ error: `Invalid result response` }, { status: 500 })
+        }
+        const videoUrl = resultData?.video?.url
+        return NextResponse.json({ status: 'COMPLETED', url: videoUrl })
+      }
+
+      if (statusData.status === 'FAILED') {
+        return NextResponse.json({ status: 'FAILED', error: statusData.error || 'Geração falhou' })
+      }
+
+      return NextResponse.json({ status: statusData.status || 'IN_QUEUE' })
     }
 
     // === SUBMIT: new video generation job ===
@@ -62,11 +70,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Prompt não fornecido' }, { status: 400 })
     }
 
-    const submitResp = await fetch('https://queue.fal.run/fal-ai/kling-video/v1.6/standard/text-to-video', {
+    const submitResp = await fetch(`https://queue.fal.run/${FAL_MODEL}`, {
       method: 'POST',
       headers: {
         'Authorization': `Key ${falKey}`,
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: JSON.stringify({
         prompt: body.prompt,
@@ -75,19 +84,23 @@ export async function POST(req: NextRequest) {
       }),
     })
 
-    if (!submitResp.ok) {
-      const errText = await submitResp.text()
-      return NextResponse.json({ error: `fal.ai erro ${submitResp.status}: ${errText.slice(0, 300)}` }, { status: 500 })
+    const submitText = await submitResp.text()
+    
+    let submitData
+    try {
+      submitData = JSON.parse(submitText)
+    } catch (e) {
+      return NextResponse.json({ error: `Invalid submit response: ${submitText.slice(0, 200)}` }, { status: 500 })
     }
 
-    const submitData = await submitResp.json()
+    if (!submitResp.ok) {
+      return NextResponse.json({ error: `fal.ai erro ${submitResp.status}: ${JSON.stringify(submitData).slice(0, 300)}` }, { status: 500 })
+    }
 
-    // Direct result (unlikely for video)
     if (submitData?.video?.url) {
       return NextResponse.json({ status: 'COMPLETED', url: submitData.video.url })
     }
 
-    // Queue response
     if (submitData.request_id) {
       return NextResponse.json({ status: 'QUEUED', request_id: submitData.request_id })
     }
