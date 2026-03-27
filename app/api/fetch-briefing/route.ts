@@ -15,7 +15,8 @@ export async function POST(req: NextRequest) {
     const jinaRes = await fetch(jinaUrl, {
       headers: {
         'Accept': 'text/plain',
-        'X-Timeout': '15000',
+        'X-Timeout': '30000',
+        'X-Wait-For-Selector': 'body',
       },
     })
 

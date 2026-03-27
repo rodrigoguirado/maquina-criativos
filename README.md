@@ -32,4 +32,3 @@ npm run dev
 ---
 
 **Marketing AI Hackathon 2026 — Seazone**
- 

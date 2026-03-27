@@ -309,11 +309,19 @@ export default function Home() {
       const data = await res.json()
       if (data.error) throw new Error(data.error)
       if (data.briefing) {
-        setBriefing((prev: any) => ({ ...prev, ...data.briefing }))
-        setBriefingSource(data.briefing.empreendimento || 'Briefing importado')
+        // Only update fields that have real data (not N/D)
+        const newBriefing = { ...briefing }
+        for (const [key, value] of Object.entries(data.briefing)) {
+          if (value && value !== 'N/D' && (value as string).trim() !== '') {
+            (newBriefing as any)[key] = value
+          }
+        }
+        setBriefing(newBriefing)
+        setBriefingSource(data.briefing.empreendimento && data.briefing.empreendimento !== 'N/D' ? data.briefing.empreendimento : 'Briefing importado')
         setStaticResult(null)
         setNarradoResult(null)
         setMonicaResult(null)
+        setShowBriefingEdit(true)
       }
     } catch (err: any) {
       setError('Erro ao puxar briefing: ' + err.message)
