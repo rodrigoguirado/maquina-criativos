@@ -6,17 +6,30 @@ export async function POST(req: NextRequest) {
   try {
     const { url } = await req.json()
 
-    if (!url) {
+    if (!url || !url.trim()) {
       return NextResponse.json({ error: 'URL não fornecida' }, { status: 400 })
     }
 
-    // Fetch the Lovable page HTML
-    const pageRes = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
+    // Step 1: Use Jina Reader to render JavaScript and extract text
+    const jinaUrl = `https://r.jina.ai/${url.trim()}`
+    const jinaRes = await fetch(jinaUrl, {
+      headers: {
+        'Accept': 'text/plain',
+        'X-Timeout': '15000',
+      },
     })
-    const html = await pageRes.text()
 
-    // Use Claude to extract briefing data from the HTML
+    if (!jinaRes.ok) {
+      return NextResponse.json({ error: `Erro ao acessar página: ${jinaRes.status}` }, { status: 500 })
+    }
+
+    const pageText = await jinaRes.text()
+
+    if (!pageText || pageText.length < 50) {
+      return NextResponse.json({ error: 'Página retornou conteúdo vazio' }, { status: 500 })
+    }
+
+    // Step 2: Use Claude to extract structured briefing from the text
     const apiKey = process.env.OPENROUTER_API_KEY
     if (!apiKey) {
       return NextResponse.json({ error: 'OPENROUTER_API_KEY não configurada' }, { status: 500 })
@@ -33,41 +46,44 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: 'user',
-            content: `Extraia os dados do briefing deste HTML de um empreendimento imobiliário Seazone SPOT. 
-            
-Retorne APENAS JSON válido (sem markdown, sem backticks):
-{"empreendimento":"nome","localizacao":"endereço completo","ticket_medio":"valor","menor_cota":"valor","roi":"percentual","renda_liquida_ano":"valor/ano","renda_liquida_mes":"valor/mês","valorizacao":"percentual","cotas":"quantidade","gestao":"Gestão completa pela Seazone","disclaimer":"*Projeção estimada. Este material tem caráter exclusivamente informativo e não constitui promessa de rentabilidade futura ou garantia de retorno financeiro."}
+            content: `Extraia os dados do briefing deste texto de um empreendimento imobiliário Seazone SPOT.
 
-Se algum campo não estiver no HTML, use "N/D".
+Procure por: nome do empreendimento, localização/endereço, ticket médio, menor cota, ROI, renda líquida anual, renda líquida mensal, valorização estimada, quantidade de cotas/unidades.
 
-HTML (primeiros 5000 caracteres):
-${html.slice(0, 5000)}`
+Retorne APENAS JSON válido (sem markdown, sem backticks, sem texto antes ou depois):
+{"empreendimento":"nome do SPOT","localizacao":"endereço ou cidade","ticket_medio":"R$ valor","menor_cota":"R$ valor","roi":"percentual%","renda_liquida_ano":"R$ valor/ano","renda_liquida_mes":"R$ valor/mês","valorizacao":"percentual%","cotas":"X cotas","gestao":"Gestão completa pela Seazone","disclaimer":"*Projeção estimada. Este material tem caráter exclusivamente informativo e não constitui promessa de rentabilidade futura ou garantia de retorno financeiro."}
+
+Se algum campo não for encontrado, use "N/D".
+
+TEXTO DA PÁGINA:
+${pageText.slice(0, 8000)}`
           }
         ],
         max_tokens: 1000,
+        temperature: 0.1,
       }),
     })
 
     const data = await response.json()
 
     if (!response.ok) {
-      return NextResponse.json({ error: data.error?.message || 'Erro ao processar briefing' }, { status: 500 })
+      return NextResponse.json({ error: data.error?.message || 'Erro na API' }, { status: 500 })
     }
 
-    const text = data.choices?.[0]?.message?.content || ''
+    const content = data.choices?.[0]?.message?.content || ''
 
     try {
-      const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+      const cleaned = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
       const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0])
         return NextResponse.json({ briefing: parsed })
       }
     } catch (e) {
-      // fall through
+      console.error('Parse error:', e)
     }
 
-    return NextResponse.json({ error: 'Não foi possível extrair o briefing' }, { status: 500 })
+    return NextResponse.json({ error: 'Não foi possível extrair dados da página' }, { status: 500 })
   } catch (err: any) {
     console.error('Fetch briefing error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })

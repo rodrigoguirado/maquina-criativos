@@ -142,16 +142,21 @@ function VideoScript({ data, type }: { data: any; type: 'narrado' | 'monica' }) 
   )
 }
 
-/* ========== VIDEO GENERATOR (fal.ai Kling) ========== */
+/* ========== VIDEO GENERATOR (fal.ai Kling) with client-side polling ========== */
 function VideoGenerator({ prompt }: { prompt: string }) {
   const [generating, setGenerating] = useState(false)
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [statusMsg, setStatusMsg] = useState('')
 
   const generate = async () => {
     setGenerating(true)
     setError(null)
+    setVideoUrl(null)
+    setStatusMsg('Enviando para fal.ai...')
+
     try {
+      // Submit job
       const res = await fetch('/api/generate-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -159,7 +164,42 @@ function VideoGenerator({ prompt }: { prompt: string }) {
       })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
-      setVideoUrl(data.url)
+
+      if (data.status === 'COMPLETED' && data.url) {
+        setVideoUrl(data.url)
+        setGenerating(false)
+        return
+      }
+
+      if (data.request_id) {
+        // Poll for completion
+        const reqId = data.request_id
+        let attempts = 0
+        while (attempts < 60) {
+          setStatusMsg(`Gerando vídeo... ${attempts * 3}s`)
+          await new Promise(r => setTimeout(r, 3000))
+          
+          const pollRes = await fetch('/api/generate-video', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ request_id: reqId }),
+          })
+          const pollData = await pollRes.json()
+
+          if (pollData.status === 'COMPLETED' && pollData.url) {
+            setVideoUrl(pollData.url)
+            setGenerating(false)
+            return
+          }
+          if (pollData.status === 'FAILED') {
+            throw new Error('Geração de vídeo falhou')
+          }
+          attempts++
+        }
+        throw new Error('Timeout — tente novamente')
+      }
+
+      throw new Error('Resposta inesperada')
     } catch (err: any) {
       setError(err.message)
     }
@@ -172,18 +212,20 @@ function VideoGenerator({ prompt }: { prompt: string }) {
         <span className="text-xs font-semibold tracking-widest text-white/40">GERAR VÍDEO COM IA</span>
         <button onClick={generate} disabled={generating}
           className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${generating ? 'bg-white/10 text-white/30 cursor-wait generating' : 'bg-[#FC6058] hover:bg-[#e5544d] text-white'}`}>
-          {generating ? '⏳ Gerando vídeo...' : '🎬 Gerar com Kling'}
+          {generating ? '⏳ Gerando...' : '🎬 Gerar com Kling'}
         </button>
       </div>
       <p className="text-white/30 text-[10px] mb-2 truncate">Prompt: {prompt?.slice(0, 150)}...</p>
       {generating && (
         <div className="flex items-center gap-3 py-8 justify-center">
           <div className="spinner" />
-          <span className="text-white/50 text-sm">Gerando vídeo... pode levar 2-5 min</span>
+          <span className="text-white/50 text-sm">{statusMsg}</span>
         </div>
       )}
       {videoUrl && <video src={videoUrl} controls className="w-full rounded-lg max-h-[500px]" />}
       {error && <p className="text-[#FC6058] text-xs mt-2">Erro: {error}</p>}
+    </div>
+  )
     </div>
   )
 }
@@ -253,13 +295,32 @@ export default function Home() {
   const [briefingUrl, setBriefingUrl] = useState('')
   const [briefingSource, setBriefingSource] = useState<string>('Novo Campeche SPOT II')
   const [showBriefingEdit, setShowBriefingEdit] = useState(false)
+  const [fetchingBriefing, setFetchingBriefing] = useState(false)
 
-  // FIX #1: Open Lovable URL + editable briefing fields
-  const openBriefing = () => {
-    if (briefingUrl.trim()) {
-      window.open(briefingUrl.trim(), '_blank')
-      setShowBriefingEdit(true)
+  // Fetch briefing automatically from Lovable URL
+  const fetchBriefing = async () => {
+    if (!briefingUrl.trim()) return
+    setFetchingBriefing(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/fetch-briefing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: briefingUrl.trim() }),
+      })
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+      if (data.briefing) {
+        setBriefing((prev: any) => ({ ...prev, ...data.briefing }))
+        setBriefingSource(data.briefing.empreendimento || 'Briefing importado')
+        setStaticResult(null)
+        setNarradoResult(null)
+        setMonicaResult(null)
+      }
+    } catch (err: any) {
+      setError('Erro ao puxar briefing: ' + err.message)
     }
+    setFetchingBriefing(false)
   }
 
   const updateBriefingField = (field: string, value: string) => {
@@ -311,32 +372,33 @@ export default function Home() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-        {/* FIX #1: Briefing - editable + Lovable link */}
+        {/* Briefing - auto fetch from URL */}
         <div className="bg-white/5 rounded-xl p-5 border border-white/10">
           <div className="flex items-center gap-3 mb-4">
             <img src="/logo-spot-azul.png" alt="SPOT" className="h-10" />
             <div>
               <h2 className="text-white font-bold">Briefing: {briefingSource}</h2>
-              <p className="text-white/40 text-xs">Cole o link do Lovable ou edite os dados diretamente</p>
+              <p className="text-white/40 text-xs">Cole o link do Lovable e clique Puxar — os dados são extraídos automaticamente</p>
             </div>
           </div>
-          <div className="flex gap-2 mb-4">
-            <input
-              type="url"
-              value={briefingUrl}
-              onChange={(e) => setBriefingUrl(e.target.value)}
+
+          <div className="flex gap-2 mb-3">
+            <input type="url" value={briefingUrl} onChange={(e) => setBriefingUrl(e.target.value)}
               placeholder="https://novocampechespotiilancamento.lovable.app/"
-              className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm placeholder:text-white/20 outline-none focus:border-[#0055FF]/50"
-            />
-            <button onClick={openBriefing} disabled={!briefingUrl.trim()}
-              className="bg-[#0055FF] hover:bg-[#0044CC] text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-colors whitespace-nowrap disabled:opacity-30">
-              🔗 Abrir e Editar
+              className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm placeholder:text-white/20 outline-none focus:border-[#0055FF]/50" />
+            <button onClick={fetchBriefing} disabled={fetchingBriefing || !briefingUrl.trim()}
+              className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+                fetchingBriefing ? 'bg-white/10 text-white/30 generating' : 'bg-[#0055FF] hover:bg-[#0044CC] text-white'
+              } disabled:opacity-30`}>
+              {fetchingBriefing ? '⏳ Puxando...' : '📥 Puxar'}
             </button>
           </div>
+
           <button onClick={() => setShowBriefingEdit(!showBriefingEdit)}
             className="text-white/40 text-xs hover:text-white/60 transition-colors">
-            {showBriefingEdit ? '▲ Fechar edição' : '▼ Editar dados do briefing'}
+            {showBriefingEdit ? '▲ Fechar edição' : '✏️ Editar dados manualmente'}
           </button>
+
           {showBriefingEdit && (
             <div className="grid grid-cols-2 gap-3 mt-4">
               {[
@@ -352,15 +414,9 @@ export default function Home() {
               ].map((f) => (
                 <div key={f.key}>
                   <label className="text-white/30 text-[10px] uppercase tracking-widest">{f.label}</label>
-                  <input
-                    type="text"
-                    value={(briefing as any)[f.key] || ''}
-                    onChange={(e) => {
-                      updateBriefingField(f.key, e.target.value)
-                      if (f.key === 'empreendimento') setBriefingSource(e.target.value)
-                    }}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-[#0055FF]/50"
-                  />
+                  <input type="text" value={(briefing as any)[f.key] || ''}
+                    onChange={(e) => { updateBriefingField(f.key, e.target.value); if (f.key === 'empreendimento') setBriefingSource(e.target.value) }}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-[#0055FF]/50" />
                 </div>
               ))}
             </div>
