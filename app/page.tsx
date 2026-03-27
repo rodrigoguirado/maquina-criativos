@@ -240,9 +240,11 @@ function VideoGenerator({ prompt }: { prompt: string }) {
         const reqId = submitData.request_id
         setStatusMsg('Vídeo na fila... aguardando geração')
         
-        for (let i = 0; i < 60; i++) {
-          await new Promise(r => setTimeout(r, 5000)) // wait 5s between polls
-          setStatusMsg(`Gerando vídeo... ${(i + 1) * 5}s`)
+        for (let i = 0; ; i++) {
+          await new Promise(r => setTimeout(r, 10000)) // wait 10s between polls
+          const mins = Math.floor((i + 1) * 10 / 60)
+          const secs = ((i + 1) * 10) % 60
+          setStatusMsg(`Gerando vídeo... ${mins > 0 ? mins + 'min ' : ''}${secs}s — não feche a página`)
 
           const pollRes = await fetch('/api/generate-video', {
             method: 'POST',
@@ -269,7 +271,8 @@ function VideoGenerator({ prompt }: { prompt: string }) {
           }
         }
         
-        throw new Error('Timeout após 5 minutos — tente novamente')
+        // Should never reach here - loop runs until COMPLETED or FAILED
+        throw new Error('Loop encerrado inesperadamente')
       }
 
       throw new Error('Resposta inesperada do servidor')
