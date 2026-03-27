@@ -1,7 +1,6 @@
 'use client'
 import { useState } from 'react'
 
-// ========== BRIEFING DATA ==========
 const DEFAULT_BRIEFING = {
   empreendimento: 'Novo Campeche SPOT II',
   localizacao: 'Rua Otávio Cruz, Campeche, Florianópolis-SC',
@@ -28,7 +27,7 @@ const FUNDOS: Record<string, string> = {
   'praia': '/aereo-praia.png',
 }
 
-// ========== SCORE COMPONENT ==========
+/* ========== SCORE ========== */
 function ScoreBar({ label, value, weight }: { label: string; value: number; weight: string }) {
   const color = value >= 8 ? '#22c55e' : value >= 6 ? '#eab308' : '#ef4444'
   return (
@@ -44,51 +43,38 @@ function ScoreBar({ label, value, weight }: { label: string; value: number; weig
 
 function ScoreCard({ score }: { score: any }) {
   if (!score) return null
-  const weights = { hook: 0.25, clareza: 0.20, argumento: 0.20, comercial: 0.20, tom: 0.15 }
-  const final = (
-    (score.hook || 0) * weights.hook +
-    (score.clareza || 0) * weights.clareza +
-    (score.argumento || 0) * weights.argumento +
-    (score.comercial || 0) * weights.comercial +
-    (score.tom || 0) * weights.tom
-  ).toFixed(1)
-  const finalNum = parseFloat(final)
-  const status = finalNum >= 9 ? 'ESCALAR' : finalNum >= 8 ? 'TESTAR' : finalNum >= 6 ? 'AJUSTAR' : 'DESCARTAR'
-  const statusColor = finalNum >= 9 ? '#22c55e' : finalNum >= 8 ? '#3b82f6' : finalNum >= 6 ? '#eab308' : '#ef4444'
-
+  const w = { hook: 0.25, clareza: 0.20, argumento: 0.20, comercial: 0.20, tom: 0.15 }
+  const final = ((score.hook||0)*w.hook + (score.clareza||0)*w.clareza + (score.argumento||0)*w.argumento + (score.comercial||0)*w.comercial + (score.tom||0)*w.tom).toFixed(1)
+  const n = parseFloat(final)
+  const status = n >= 9 ? 'ESCALAR' : n >= 8 ? 'TESTAR' : n >= 6 ? 'AJUSTAR' : 'DESCARTAR'
+  const sc = n >= 9 ? '#22c55e' : n >= 8 ? '#3b82f6' : n >= 6 ? '#eab308' : '#ef4444'
   return (
     <div className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold tracking-widest text-white/40">VALIDADOR SEAZONE</span>
         <div className="flex items-center gap-2">
-          <span className="text-2xl font-black" style={{ color: statusColor }}>{final}</span>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ background: statusColor, color: '#000' }}>{status}</span>
+          <span className="text-2xl font-black" style={{ color: sc }}>{final}</span>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ background: sc, color: '#000' }}>{status}</span>
         </div>
       </div>
-      <ScoreBar label="Hook" value={score.hook || 0} weight="25%" />
-      <ScoreBar label="Clareza" value={score.clareza || 0} weight="20%" />
-      <ScoreBar label="Argumento" value={score.argumento || 0} weight="20%" />
-      <ScoreBar label="Comercial" value={score.comercial || 0} weight="20%" />
-      <ScoreBar label="Tom Seazone" value={score.tom || 0} weight="15%" />
+      <ScoreBar label="Hook" value={score.hook||0} weight="25%" />
+      <ScoreBar label="Clareza" value={score.clareza||0} weight="20%" />
+      <ScoreBar label="Argumento" value={score.argumento||0} weight="20%" />
+      <ScoreBar label="Comercial" value={score.comercial||0} weight="20%" />
+      <ScoreBar label="Tom Seazone" value={score.tom||0} weight="15%" />
     </div>
   )
 }
 
-// ========== STATIC CREATIVE PREVIEW ==========
+/* ========== STATIC PREVIEW ========== */
 function StaticPreview({ data }: { data: any }) {
   const bgImage = FUNDOS[data.fundo] || FUNDOS['fachada']
   return (
     <div className="w-full max-w-[400px] mx-auto">
-      {/* 4:5 aspect ratio container */}
       <div className="relative w-full overflow-hidden rounded-lg" style={{ aspectRatio: '4/5' }}>
-        {/* Background photo */}
         <img src={bgImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        {/* Dark overlay for readability */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/50 to-black/80" />
-
-        {/* Content */}
         <div className="absolute inset-0 flex flex-col justify-between p-6">
-          {/* Top: logos + badge */}
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <img src="/logo-seazone-branco.png" alt="Seazone" className="h-6 object-contain" />
@@ -100,38 +86,19 @@ function StaticPreview({ data }: { data: any }) {
               </span>
             )}
           </div>
-
-          {/* Middle: location pin */}
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <div className="inline-flex items-center gap-1 text-white/80 text-xs mb-3">
-                <span>📍</span>
-                <span>Campeche, Florianópolis</span>
+                <span>📍</span><span>Campeche, Florianópolis</span>
               </div>
-              {/* Headline */}
-              <h2 className="text-white text-2xl font-bold leading-tight mb-3 drop-shadow-lg">
-                {data.headline}
-              </h2>
-              {/* Subheadline */}
-              <p className="text-white/90 text-sm font-medium">
-                {data.subheadline}
-              </p>
+              <h2 className="text-white text-2xl font-bold leading-tight mb-3 drop-shadow-lg">{data.headline}</h2>
+              <p className="text-white/90 text-sm font-medium">{data.subheadline}</p>
             </div>
           </div>
-
-          {/* Bottom: CTA + disclaimer */}
           <div className="space-y-3">
-            {data.pontos_fortes && (
-              <div className="text-white/50 text-[10px] text-center tracking-widest font-medium">
-                {data.pontos_fortes}
-              </div>
-            )}
-            <button className="w-full bg-[#0055FF] hover:bg-[#0044CC] text-white font-bold py-3 rounded-lg text-sm transition-colors">
-              {data.cta || 'Saiba mais'}
-            </button>
-            <p className="text-white/30 text-[7px] leading-tight text-center">
-              {DEFAULT_BRIEFING.disclaimer}
-            </p>
+            {data.pontos_fortes && <div className="text-white/50 text-[10px] text-center tracking-widest font-medium">{data.pontos_fortes}</div>}
+            <button className="w-full bg-[#0055FF] hover:bg-[#0044CC] text-white font-bold py-3 rounded-lg text-sm transition-colors">{data.cta || 'Saiba mais'}</button>
+            <p className="text-white/30 text-[7px] leading-tight text-center">{DEFAULT_BRIEFING.disclaimer}</p>
           </div>
         </div>
       </div>
@@ -139,46 +106,33 @@ function StaticPreview({ data }: { data: any }) {
   )
 }
 
-// ========== VIDEO SCRIPT DISPLAY ==========
+/* ========== VIDEO SCRIPT ========== */
 function VideoScript({ data, type }: { data: any; type: 'narrado' | 'monica' }) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-bold text-white">{data.titulo}</h3>
-          <p className="text-white/50 text-sm">{data.duracao}s • Reels 9:16{type === 'monica' ? ` • Cenário: ${data.cenario}` : ''}</p>
-        </div>
+      <div>
+        <h3 className="text-lg font-bold text-white">{data.titulo}</h3>
+        <p className="text-white/50 text-sm">{data.duracao}s • Reels 9:16{type === 'monica' ? ` • ${data.cenario}` : ''}</p>
       </div>
-
       <div className="space-y-3">
         {(data.cenas || []).map((cena: any, i: number) => (
           <div key={i} className="bg-white/5 rounded-lg p-4 border border-white/10">
             <div className="flex items-center gap-2 mb-2">
-              <span className="bg-[#0055FF] text-white text-[10px] font-bold w-6 h-6 rounded-full flex items-center justify-center">
-                {cena.numero || i + 1}
-              </span>
+              <span className="bg-[#0055FF] text-white text-[10px] font-bold w-6 h-6 rounded-full flex items-center justify-center">{cena.numero || i+1}</span>
               <span className="text-white/50 text-xs">{cena.duracao}</span>
-              {type === 'monica' && cena.enquadramento && (
-                <span className="text-[#FC6058] text-xs">• {cena.enquadramento}</span>
-              )}
+              {type === 'monica' && cena.enquadramento && <span className="text-[#FC6058] text-xs">• {cena.enquadramento}</span>}
             </div>
             {type === 'narrado' ? (
               <>
                 <p className="text-white/40 text-xs mb-1">🎥 {cena.visual}</p>
-                <p className="text-white font-medium text-sm">🎙️ "{cena.narracao}"</p>
-                {cena.overlay_texto && (
-                  <p className="text-[#FC6058] text-xs mt-1">📝 {cena.overlay_texto}</p>
-                )}
+                <p className="text-white font-medium text-sm">🎙️ &ldquo;{cena.narracao}&rdquo;</p>
+                {cena.overlay_texto && <p className="text-[#FC6058] text-xs mt-1">📝 {cena.overlay_texto}</p>}
               </>
             ) : (
               <>
-                <p className="text-white font-medium text-sm">🗣️ "{cena.fala_monica}"</p>
-                {cena.overlay_texto && (
-                  <p className="text-[#FC6058] text-xs mt-1">📝 {cena.overlay_texto}</p>
-                )}
-                {cena.direcao && (
-                  <p className="text-white/30 text-xs mt-1">🎬 {cena.direcao}</p>
-                )}
+                <p className="text-white font-medium text-sm">🗣️ &ldquo;{cena.fala_monica}&rdquo;</p>
+                {cena.overlay_texto && <p className="text-[#FC6058] text-xs mt-1">📝 {cena.overlay_texto}</p>}
+                {cena.direcao && <p className="text-white/30 text-xs mt-1">🎬 {cena.direcao}</p>}
               </>
             )}
           </div>
@@ -188,8 +142,8 @@ function VideoScript({ data, type }: { data: any; type: 'narrado' | 'monica' }) 
   )
 }
 
-// ========== VIDEO GENERATION COMPONENT ==========
-function VideoGenerator({ prompt, label }: { prompt: string; label: string }) {
+/* ========== VIDEO GENERATOR (fal.ai Kling) ========== */
+function VideoGenerator({ prompt }: { prompt: string }) {
   const [generating, setGenerating] = useState(false)
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -216,54 +170,50 @@ function VideoGenerator({ prompt, label }: { prompt: string; label: string }) {
     <div className="bg-white/5 rounded-xl p-4 border border-white/10">
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-semibold tracking-widest text-white/40">GERAR VÍDEO COM IA</span>
-        <button
-          onClick={generate}
-          disabled={generating}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-            generating
-              ? 'bg-white/10 text-white/30 cursor-wait generating'
-              : 'bg-[#FC6058] hover:bg-[#e5544d] text-white cursor-pointer'
-          }`}
-        >
+        <button onClick={generate} disabled={generating}
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${generating ? 'bg-white/10 text-white/30 cursor-wait generating' : 'bg-[#FC6058] hover:bg-[#e5544d] text-white'}`}>
           {generating ? '⏳ Gerando vídeo...' : '🎬 Gerar com Kling'}
         </button>
       </div>
-      <p className="text-white/30 text-[10px] mb-2">Prompt: {prompt?.slice(0, 100)}...</p>
+      <p className="text-white/30 text-[10px] mb-2 truncate">Prompt: {prompt?.slice(0, 150)}...</p>
       {generating && (
-        <div className="flex items-center gap-3 py-6 justify-center">
+        <div className="flex items-center gap-3 py-8 justify-center">
           <div className="spinner" />
           <span className="text-white/50 text-sm">Gerando vídeo... pode levar 2-5 min</span>
         </div>
       )}
-      {videoUrl && (
-        <video src={videoUrl} controls className="w-full rounded-lg max-h-[400px]" />
-      )}
-      {error && (
-        <p className="text-[#FC6058] text-xs mt-2">Erro: {error}</p>
-      )}
+      {videoUrl && <video src={videoUrl} controls className="w-full rounded-lg max-h-[500px]" />}
+      {error && <p className="text-[#FC6058] text-xs mt-2">Erro: {error}</p>}
     </div>
   )
 }
 
-// ========== IMAGE GENERATION COMPONENT ==========
-function ImageGenerator({ data }: { data: any }) {
+/* ========== IMAGE GENERATOR (fal.ai Flux) ========== */
+function ImageGenerator({ fundo }: { fundo: string }) {
   const [generating, setGenerating] = useState(false)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  const prompts: Record<string, string> = {
+    'fachada': 'Modern boutique hotel facade, concrete and wood, tropical plants, golden hour, Florianopolis Brazil, professional architecture photo, 4K',
+    'aereo-pin': 'Aerial drone photo of beach neighborhood Campeche Florianopolis Brazil, ocean view, residential buildings, sunny day, 4K',
+    'rooftop': 'Luxury rooftop pool with ocean view, modern building, Florianopolis Brazil, sunset, cinematic, 4K',
+    'praia': 'Aerial coastline photo Campeche beach Florianopolis Brazil, turquoise water, white sand, buildings, 4K',
+  }
+
   const generate = async () => {
     setGenerating(true)
     setError(null)
-    const prompt = `Professional real estate marketing photo, ${data.fundo === 'fachada' ? 'modern apartment building facade' : data.fundo === 'aereo-pin' ? 'aerial view of beach neighborhood with location pin' : data.fundo === 'rooftop' ? 'luxury rooftop with ocean view' : 'aerial beach coastline'}, Campeche Florianopolis Brazil, golden hour, cinematic, 4K, professional advertising photography`
     try {
+      const prompt = prompts[fundo] || prompts['fachada']
       const res = await fetch('/api/generate-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt }),
       })
-      const result = await res.json()
-      if (result.error) throw new Error(result.error)
-      setImageUrl(result.url)
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+      setImageUrl(data.url)
     } catch (err: any) {
       setError(err.message)
     }
@@ -273,46 +223,65 @@ function ImageGenerator({ data }: { data: any }) {
   return (
     <div className="bg-white/5 rounded-xl p-4 border border-white/10">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold tracking-widest text-white/40">GERAR IMAGEM COM IA</span>
-        <button
-          onClick={generate}
-          disabled={generating}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-            generating
-              ? 'bg-white/10 text-white/30 cursor-wait generating'
-              : 'bg-[#0055FF] hover:bg-[#0044CC] text-white cursor-pointer'
-          }`}
-        >
-          {generating ? '⏳ Gerando...' : '🖼️ Gerar com Flux'}
+        <span className="text-xs font-semibold tracking-widest text-white/40">GERAR IMAGEM COM IA (FAL.AI FLUX)</span>
+        <button onClick={generate} disabled={generating}
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${generating ? 'bg-white/10 text-white/30 cursor-wait generating' : 'bg-[#0055FF] hover:bg-[#0044CC] text-white'}`}>
+          {generating ? '⏳ Gerando...' : '🖼️ Gerar Imagem'}
         </button>
       </div>
       {generating && (
         <div className="flex items-center gap-3 py-6 justify-center">
           <div className="spinner" />
-          <span className="text-white/50 text-sm">Gerando imagem com fal.ai...</span>
+          <span className="text-white/50 text-sm">Gerando imagem com fal.ai Flux...</span>
         </div>
       )}
-      {imageUrl && (
-        <img src={imageUrl} alt="Gerada por IA" className="w-full rounded-lg" />
-      )}
-      {error && (
-        <p className="text-[#FC6058] text-xs mt-2">Erro: {error}</p>
-      )}
+      {imageUrl && <img src={imageUrl} alt="Gerada por IA" className="w-full rounded-lg" />}
+      {error && <p className="text-[#FC6058] text-xs mt-2">Erro: {error}</p>}
     </div>
   )
 }
 
-// ========== MAIN PAGE ==========
+/* ========== MAIN PAGE ========== */
 export default function Home() {
   const [tab, setTab] = useState<'static' | 'narrado' | 'monica'>('static')
-  const [briefing] = useState(DEFAULT_BRIEFING)
+  const [briefing, setBriefing] = useState(DEFAULT_BRIEFING)
   const [loading, setLoading] = useState(false)
+  const [fetchingBriefing, setFetchingBriefing] = useState(false)
   const [staticResult, setStaticResult] = useState<any>(null)
   const [narradoResult, setNarradoResult] = useState<any>(null)
   const [monicaResult, setMonicaResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [briefingUrl, setBriefingUrl] = useState('')
+  const [briefingSource, setBriefingSource] = useState<string>('padrão')
 
+  // FIX #1: Fetch briefing from Lovable URL
+  const fetchBriefing = async () => {
+    if (!briefingUrl.trim()) return
+    setFetchingBriefing(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/fetch-briefing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: briefingUrl.trim() }),
+      })
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+      if (data.briefing) {
+        setBriefing({ ...DEFAULT_BRIEFING, ...data.briefing })
+        setBriefingSource(data.briefing.empreendimento || briefingUrl)
+        // Clear previous results
+        setStaticResult(null)
+        setNarradoResult(null)
+        setMonicaResult(null)
+      }
+    } catch (err: any) {
+      setError('Erro ao puxar briefing: ' + err.message)
+    }
+    setFetchingBriefing(false)
+  }
+
+  // Generate creative
   const generateCreative = async () => {
     setLoading(true)
     setError(null)
@@ -320,10 +289,14 @@ export default function Home() {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: tab === 'static' ? 'static' : tab === 'narrado' ? 'video-narrado' : 'video-monica', briefing }),
+        body: JSON.stringify({
+          type: tab === 'static' ? 'static' : tab === 'narrado' ? 'video-narrado' : 'video-monica',
+          briefing,
+        }),
       })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
+      if (!data.result) throw new Error('Resposta vazia da IA')
 
       if (tab === 'static') setStaticResult(data.result)
       else if (tab === 'narrado') setNarradoResult(data.result)
@@ -338,7 +311,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#00143D]">
-      {/* Header */}
       <header className="border-b border-white/10 bg-[#00143D]/90 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -349,18 +321,21 @@ export default function Home() {
               <p className="text-white/40 text-[10px]">IA Autônoma — Hackathon 2026</p>
             </div>
           </div>
-          <span className="text-[10px] text-white/20 font-mono">v2.0</span>
+          <span className="text-[10px] text-white/20 font-mono">v2.1</span>
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-        {/* Briefing URL Input */}
+        {/* FIX #1: Briefing URL Input - now functional */}
         <div className="bg-white/5 rounded-xl p-5 border border-white/10">
           <div className="flex items-center gap-3 mb-4">
             <img src="/logo-spot-azul.png" alt="SPOT" className="h-10" />
             <div>
               <h2 className="text-white font-bold">Briefing do Empreendimento</h2>
-              <p className="text-white/40 text-xs">Cole o link do Lovable ou use o briefing padrão</p>
+              <p className="text-white/40 text-xs">
+                Cole o link do Lovable para puxar dados automaticamente
+                {briefingSource !== 'padrão' && <span className="text-[#22c55e] ml-2">✓ {briefingSource}</span>}
+              </p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -368,16 +343,22 @@ export default function Home() {
               type="url"
               value={briefingUrl}
               onChange={(e) => setBriefingUrl(e.target.value)}
-              placeholder="https://lovable.dev/projects/... (opcional)"
+              placeholder="https://novocampechespotiilancamento.lovable.app/"
               className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm placeholder:text-white/20 outline-none focus:border-[#0055FF]/50"
             />
-            <button className="bg-[#0055FF] hover:bg-[#0044CC] text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-colors whitespace-nowrap">
-              📥 Puxar
+            <button
+              onClick={fetchBriefing}
+              disabled={fetchingBriefing || !briefingUrl.trim()}
+              className={`px-4 py-2.5 rounded-lg text-sm font-bold transition-colors whitespace-nowrap ${
+                fetchingBriefing ? 'bg-white/10 text-white/30' : 'bg-[#0055FF] hover:bg-[#0044CC] text-white'
+              }`}
+            >
+              {fetchingBriefing ? '⏳ Puxando...' : '📥 Puxar'}
             </button>
           </div>
         </div>
 
-        {/* Briefing Summary Cards */}
+        {/* Briefing Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: 'ROI Estimado', value: briefing.roi, color: '#22c55e' },
@@ -399,15 +380,8 @@ export default function Home() {
             { id: 'narrado' as const, icon: '🎙️', label: 'Vídeos Narrados', sub: '9:16 Reels' },
             { id: 'monica' as const, icon: '🎬', label: 'Vídeos Mônica', sub: '9:16 Reels' },
           ].map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`flex-1 py-3 px-2 rounded-lg text-center transition-all ${
-                tab === t.id
-                  ? 'bg-[#0055FF] text-white'
-                  : 'text-white/40 hover:text-white/60 hover:bg-white/5'
-              }`}
-            >
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={`flex-1 py-3 px-2 rounded-lg text-center transition-all ${tab === t.id ? 'bg-[#0055FF] text-white' : 'text-white/40 hover:text-white/60 hover:bg-white/5'}`}>
               <span className="text-lg">{t.icon}</span>
               <p className="text-xs font-bold mt-1">{t.label}</p>
               <p className="text-[10px] opacity-60">{t.sub}</p>
@@ -416,22 +390,15 @@ export default function Home() {
         </div>
 
         {/* Generate Button */}
-        <button
-          onClick={generateCreative}
-          disabled={loading}
-          className={`w-full py-4 rounded-xl font-bold text-sm transition-all ${
-            loading
-              ? 'bg-white/10 text-white/30 cursor-wait generating'
-              : 'bg-[#FC6058] hover:bg-[#e5544d] text-white hover:scale-[1.01] active:scale-[0.99]'
-          }`}
-        >
+        <button onClick={generateCreative} disabled={loading}
+          className={`w-full py-4 rounded-xl font-bold text-sm transition-all ${loading ? 'bg-white/10 text-white/30 cursor-wait generating' : 'bg-[#FC6058] hover:bg-[#e5544d] text-white hover:scale-[1.01] active:scale-[0.99]'}`}>
           {loading ? (
             <span className="flex items-center justify-center gap-3">
               <div className="spinner !w-5 !h-5 !border-2" />
               Gerando criativo com IA...
             </span>
           ) : (
-            `⚡ Gerar 1 ${tab === 'static' ? 'Peça Estática' : tab === 'narrado' ? 'Vídeo Narrado' : 'Vídeo Mônica'}`
+            `⚡ Gerar 1 ${tab === 'static' ? 'Peça Estática (4:5)' : tab === 'narrado' ? 'Vídeo Narrado (9:16)' : 'Vídeo Mônica (9:16)'}`
           )}
         </button>
 
@@ -441,33 +408,36 @@ export default function Home() {
           </div>
         )}
 
-        {/* Results */}
+        {/* RESULTS */}
         {currentResult && (
           <div className="space-y-6">
+            {/* FIX #2: Static with working image gen */}
             {tab === 'static' && staticResult && (
               <>
                 <StaticPreview data={staticResult} />
                 <ScoreCard score={staticResult.score} />
-                <ImageGenerator data={staticResult} />
+                <ImageGenerator fundo={staticResult.fundo || 'fachada'} />
               </>
             )}
 
+            {/* FIX #3: Video Narrado - roteiro + video generation */}
             {tab === 'narrado' && narradoResult && (
               <>
                 <VideoScript data={narradoResult} type="narrado" />
                 <ScoreCard score={narradoResult.score} />
                 {narradoResult.prompt_video && (
-                  <VideoGenerator prompt={narradoResult.prompt_video} label="Gerar Vídeo Narrado" />
+                  <VideoGenerator prompt={narradoResult.prompt_video} />
                 )}
               </>
             )}
 
+            {/* FIX #4: Video Monica - roteiro + video generation */}
             {tab === 'monica' && monicaResult && (
               <>
                 <VideoScript data={monicaResult} type="monica" />
                 <ScoreCard score={monicaResult.score} />
                 {monicaResult.prompt_video && (
-                  <VideoGenerator prompt={monicaResult.prompt_video} label="Gerar Vídeo Mônica" />
+                  <VideoGenerator prompt={monicaResult.prompt_video} />
                 )}
               </>
             )}
@@ -477,16 +447,13 @@ export default function Home() {
         {/* Empty State */}
         {!currentResult && !loading && (
           <div className="text-center py-16 text-white/20">
-            <p className="text-4xl mb-3">
-              {tab === 'static' ? '🖼️' : tab === 'narrado' ? '🎙️' : '🎬'}
-            </p>
+            <p className="text-4xl mb-3">{tab === 'static' ? '🖼️' : tab === 'narrado' ? '🎙️' : '🎬'}</p>
             <p className="text-sm">Clique em gerar para criar 1 {tab === 'static' ? 'peça estática (4:5)' : tab === 'narrado' ? 'vídeo narrado (9:16)' : 'vídeo com Mônica (9:16)'}</p>
             <p className="text-xs mt-1 text-white/10">Cada geração é única — gere quantas vezes quiser</p>
           </div>
         )}
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-white/5 mt-16 py-6 text-center">
         <img src="/logo-seazone-azul.png" alt="Seazone" className="h-5 mx-auto mb-2 opacity-30" />
         <p className="text-white/15 text-[10px]">Marketing AI Hackathon 2026 — Máquina de Criativos</p>
