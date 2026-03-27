@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { toPng } from 'html-to-image'
 
 const DEFAULT_BRIEFING = {
   empreendimento: 'Novo Campeche SPOT II',
@@ -32,8 +33,8 @@ function ScoreBar({ label, value, weight }: { label: string; value: number; weig
   const color = value >= 8 ? '#22c55e' : value >= 6 ? '#eab308' : '#ef4444'
   return (
     <div className="flex items-center gap-3 text-sm">
-      <span className="w-24 text-white/60">{label} <span className="text-[10px]">({weight})</span></span>
-      <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+      <span className="w-24 text-gray-500">{label} <span className="text-[10px]">({weight})</span></span>
+      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
         <div className="h-full rounded-full transition-all duration-700" style={{ width: `${value * 10}%`, background: color }} />
       </div>
       <span className="w-8 text-right font-bold" style={{ color }}>{value}</span>
@@ -49,9 +50,9 @@ function ScoreCard({ score }: { score: any }) {
   const status = n >= 9 ? 'ESCALAR' : n >= 8 ? 'TESTAR' : n >= 6 ? 'AJUSTAR' : 'DESCARTAR'
   const sc = n >= 9 ? '#22c55e' : n >= 8 ? '#3b82f6' : n >= 6 ? '#eab308' : '#ef4444'
   return (
-    <div className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-3">
+    <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold tracking-widest text-white/40">VALIDADOR SEAZONE</span>
+        <span className="text-xs font-semibold tracking-widest text-gray-400">VALIDADOR SEAZONE</span>
         <div className="flex items-center gap-2">
           <span className="text-2xl font-black" style={{ color: sc }}>{final}</span>
           <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ background: sc, color: '#000' }}>{status}</span>
@@ -77,16 +78,19 @@ function StaticPreview({ data, briefing }: { data: any; briefing: any }) {
     return parts.map((part, i) => i % 2 === 1 ? <strong key={i}>{part}</strong> : part)
   }
 
-  const downloadImage = () => {
+  const downloadImage = async () => {
     const el = document.getElementById('static-preview')
     if (!el) return
-    // Use html2canvas-like approach: open in new window for screenshot
-    const win = window.open('', '_blank')
-    if (!win) return
-    win.document.write(`<html><body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#000;">`)
-    win.document.write(el.outerHTML)
-    win.document.write(`<p style="color:white;text-align:center;margin-top:20px;font-family:sans-serif;">Clique com botão direito na imagem → "Salvar como" para baixar</p>`)
-    win.document.write(`</body></html>`)
+    try {
+      const dataUrl = await toPng(el, { pixelRatio: 3, cacheBust: true })
+      const link = document.createElement('a')
+      link.download = `criativo-seazone-${Date.now()}.png`
+      link.href = dataUrl
+      link.click()
+    } catch (err) {
+      console.error('Download error:', err)
+      alert('Erro ao baixar. Tente: clique direito na peça → Salvar imagem como...')
+    }
   }
 
   return (
@@ -157,7 +161,7 @@ function StaticPreview({ data, briefing }: { data: any; briefing: any }) {
 
       {/* Download button */}
       <button onClick={downloadImage}
-        className="w-full py-2.5 rounded-lg text-xs font-bold bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border border-white/10 transition-all">
+        className="w-full py-2.5 rounded-lg text-xs font-bold bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-800 border border-gray-200 shadow-sm transition-all">
         💾 Baixar Peça Estática
       </button>
     </div>
@@ -169,28 +173,28 @@ function VideoScript({ data, type }: { data: any; type: 'narrado' | 'monica' }) 
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-bold text-white">{data.titulo}</h3>
-        <p className="text-white/50 text-sm">{data.duracao}s • Reels 9:16{type === 'monica' ? ` • ${data.cenario}` : ''}</p>
+        <h3 className="text-lg font-bold text-gray-800">{data.titulo}</h3>
+        <p className="text-gray-400 text-sm">{data.duracao}s • Reels 9:16{type === 'monica' ? ` • ${data.cenario}` : ''}</p>
       </div>
       <div className="space-y-3">
         {(data.cenas || []).map((cena: any, i: number) => (
-          <div key={i} className="bg-white/5 rounded-lg p-4 border border-white/10">
+          <div key={i} className="bg-white rounded-lg p-4 border border-gray-200">
             <div className="flex items-center gap-2 mb-2">
               <span className="bg-[#0055FF] text-white text-[10px] font-bold w-6 h-6 rounded-full flex items-center justify-center">{cena.numero || i+1}</span>
-              <span className="text-white/50 text-xs">{cena.duracao}</span>
+              <span className="text-gray-400 text-xs">{cena.duracao}</span>
               {type === 'monica' && cena.enquadramento && <span className="text-[#FC6058] text-xs">• {cena.enquadramento}</span>}
             </div>
             {type === 'narrado' ? (
               <>
-                <p className="text-white/40 text-xs mb-1">🎥 {cena.visual}</p>
-                <p className="text-white font-medium text-sm">🎙️ &ldquo;{cena.narracao}&rdquo;</p>
+                <p className="text-gray-400 text-xs mb-1">🎥 {cena.visual}</p>
+                <p className="text-gray-800 font-medium text-sm">🎙️ &ldquo;{cena.narracao}&rdquo;</p>
                 {cena.overlay_texto && <p className="text-[#FC6058] text-xs mt-1">📝 {cena.overlay_texto}</p>}
               </>
             ) : (
               <>
-                <p className="text-white font-medium text-sm">🗣️ &ldquo;{cena.fala_monica}&rdquo;</p>
+                <p className="text-gray-800 font-medium text-sm">🗣️ &ldquo;{cena.fala_monica}&rdquo;</p>
                 {cena.overlay_texto && <p className="text-[#FC6058] text-xs mt-1">📝 {cena.overlay_texto}</p>}
-                {cena.direcao && <p className="text-white/30 text-xs mt-1">🎬 {cena.direcao}</p>}
+                {cena.direcao && <p className="text-gray-300 text-xs mt-1">🎬 {cena.direcao}</p>}
               </>
             )}
           </div>
@@ -265,19 +269,19 @@ function VideoGenerator({ prompt }: { prompt: string }) {
   }
 
   return (
-    <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+    <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold tracking-widest text-white/40">GERAR VÍDEO COM IA</span>
+        <span className="text-xs font-semibold tracking-widest text-gray-400">GERAR VÍDEO COM IA</span>
         <button onClick={generate} disabled={generating}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${generating ? 'bg-white/10 text-white/30 cursor-wait generating' : 'bg-[#FC6058] hover:bg-[#e5544d] text-white'}`}>
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${generating ? 'bg-gray-200 text-gray-400 cursor-wait generating' : 'bg-[#FC6058] hover:bg-[#e5544d] text-white'}`}>
           {generating ? '⏳ Gerando...' : '🎬 Gerar com Kling'}
         </button>
       </div>
-      <p className="text-white/30 text-[10px] mb-2 truncate">Prompt: {prompt?.slice(0, 150)}...</p>
+      <p className="text-gray-300 text-[10px] mb-2 truncate">Prompt: {prompt?.slice(0, 150)}...</p>
       {generating && (
         <div className="flex items-center gap-3 py-8 justify-center">
           <div className="spinner" />
-          <span className="text-white/50 text-sm">{statusMsg}</span>
+          <span className="text-gray-400 text-sm">{statusMsg}</span>
         </div>
       )}
       {videoUrl && <video src={videoUrl} controls className="w-full rounded-lg max-h-[500px]" />}
@@ -319,18 +323,18 @@ function ImageGenerator({ fundo }: { fundo: string }) {
   }
 
   return (
-    <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+    <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold tracking-widest text-white/40">GERAR IMAGEM COM IA (FAL.AI FLUX)</span>
+        <span className="text-xs font-semibold tracking-widest text-gray-400">GERAR IMAGEM COM IA (FAL.AI FLUX)</span>
         <button onClick={generate} disabled={generating}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${generating ? 'bg-white/10 text-white/30 cursor-wait generating' : 'bg-[#0055FF] hover:bg-[#0044CC] text-white'}`}>
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${generating ? 'bg-gray-200 text-gray-400 cursor-wait generating' : 'bg-[#0055FF] hover:bg-[#0044CC] text-white'}`}>
           {generating ? '⏳ Gerando...' : '🖼️ Gerar Imagem'}
         </button>
       </div>
       {generating && (
         <div className="flex items-center gap-3 py-6 justify-center">
           <div className="spinner" />
-          <span className="text-white/50 text-sm">Gerando imagem com fal.ai Flux...</span>
+          <span className="text-gray-400 text-sm">Gerando imagem com fal.ai Flux...</span>
         </div>
       )}
       {imageUrl && <img src={imageUrl} alt="Gerada por IA" className="w-full rounded-lg" />}
@@ -420,8 +424,8 @@ export default function Home() {
   const currentResult = tab === 'static' ? staticResult : tab === 'narrado' ? narradoResult : monicaResult
 
   return (
-    <div className="min-h-screen bg-[#00143D]">
-      <header className="border-b border-white/10 bg-[#00143D]/90 backdrop-blur-xl sticky top-0 z-50">
+    <div className="min-h-screen bg-[#F5F5F5]">
+      <header className="border-b border-gray-200 bg-[#00143D] sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <img src="/logo-seazone-branco.png" alt="Seazone" className="h-7" />
@@ -437,19 +441,19 @@ export default function Home() {
 
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         {/* Briefing - auto fetch from URL */}
-        <div className="bg-white/5 rounded-xl p-5 border border-white/10">
+        <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
             <img src="/logo-spot-azul.png" alt="SPOT" className="h-10" />
             <div>
-              <h2 className="text-white font-bold">Briefing: {briefingSource}</h2>
-              <p className="text-white/40 text-xs">Cole o link do Lovable e clique Puxar — os dados são extraídos automaticamente</p>
+              <h2 className="text-[#00143D] font-bold">Briefing: {briefingSource}</h2>
+              <p className="text-gray-400 text-xs">Cole o link do Lovable e clique Puxar — os dados são extraídos automaticamente</p>
             </div>
           </div>
 
           <div className="flex gap-2 mb-3">
             <input type="url" value={briefingUrl} onChange={(e) => setBriefingUrl(e.target.value)}
               placeholder="https://novocampechespotiilancamento.lovable.app/"
-              className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm placeholder:text-white/20 outline-none focus:border-[#0055FF]/50" />
+              className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 text-gray-800 text-sm placeholder:text-gray-300 outline-none focus:border-[#0055FF]/50" />
             <button onClick={fetchBriefing} disabled={fetchingBriefing || !briefingUrl.trim()}
               className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
                 fetchingBriefing ? 'bg-white/10 text-white/30 generating' : 'bg-[#0055FF] hover:bg-[#0044CC] text-white'
@@ -459,7 +463,7 @@ export default function Home() {
           </div>
 
           <button onClick={() => setShowBriefingEdit(!showBriefingEdit)}
-            className="text-white/40 text-xs hover:text-white/60 transition-colors">
+            className="text-gray-400 text-xs hover:text-white/60 transition-colors">
             {showBriefingEdit ? '▲ Fechar edição' : '✏️ Editar dados manualmente'}
           </button>
 
@@ -477,10 +481,10 @@ export default function Home() {
                 { key: 'cotas', label: 'Cotas' },
               ].map((f) => (
                 <div key={f.key}>
-                  <label className="text-white/30 text-[10px] uppercase tracking-widest">{f.label}</label>
+                  <label className="text-gray-400 text-[10px] uppercase tracking-widest">{f.label}</label>
                   <input type="text" value={(briefing as any)[f.key] || ''}
                     onChange={(e) => { updateBriefingField(f.key, e.target.value); if (f.key === 'empreendimento') setBriefingSource(e.target.value) }}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-[#0055FF]/50" />
+                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-800 text-sm outline-none focus:border-[#0055FF]/50" />
                 </div>
               ))}
             </div>
@@ -495,22 +499,22 @@ export default function Home() {
             { label: 'Ticket Médio', value: briefing.ticket_medio, color: '#FC6058' },
             { label: 'Valorização', value: briefing.valorizacao, color: '#eab308' },
           ].map((card, i) => (
-            <div key={i} className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
-              <p className="text-white/40 text-[10px] uppercase tracking-widest mb-1">{card.label}</p>
+            <div key={i} className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm text-center">
+              <p className="text-gray-400 text-[10px] uppercase tracking-widest mb-1">{card.label}</p>
               <p className="text-xl font-black" style={{ color: card.color }}>{card.value}</p>
             </div>
           ))}
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-white/5 rounded-xl p-1">
+        <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
           {[
             { id: 'static' as const, icon: '🖼️', label: 'Peças Estáticas', sub: '4:5 Feed' },
             { id: 'narrado' as const, icon: '🎙️', label: 'Vídeos Narrados', sub: '9:16 Reels' },
             { id: 'monica' as const, icon: '🎬', label: 'Vídeos Mônica', sub: '9:16 Reels' },
           ].map((t) => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex-1 py-3 px-2 rounded-lg text-center transition-all ${tab === t.id ? 'bg-[#0055FF] text-white' : 'text-white/40 hover:text-white/60 hover:bg-white/5'}`}>
+              className={`flex-1 py-3 px-2 rounded-lg text-center transition-all ${tab === t.id ? 'bg-[#0055FF] text-white' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}>
               <span className="text-lg">{t.icon}</span>
               <p className="text-xs font-bold mt-1">{t.label}</p>
               <p className="text-[10px] opacity-60">{t.sub}</p>
@@ -520,7 +524,7 @@ export default function Home() {
 
         {/* Generate Button */}
         <button onClick={generateCreative} disabled={loading}
-          className={`w-full py-4 rounded-xl font-bold text-sm transition-all ${loading ? 'bg-white/10 text-white/30 cursor-wait generating' : 'bg-[#FC6058] hover:bg-[#e5544d] text-white hover:scale-[1.01] active:scale-[0.99]'}`}>
+          className={`w-full py-4 rounded-xl font-bold text-sm transition-all ${loading ? 'bg-gray-200 text-gray-400 cursor-wait generating' : 'bg-[#FC6058] hover:bg-[#e5544d] text-white hover:scale-[1.01] active:scale-[0.99]'}`}>
           {loading ? (
             <span className="flex items-center justify-center gap-3">
               <div className="spinner !w-5 !h-5 !border-2" />
@@ -575,17 +579,17 @@ export default function Home() {
 
         {/* Empty State */}
         {!currentResult && !loading && (
-          <div className="text-center py-16 text-white/20">
+          <div className="text-center py-16 text-gray-300">
             <p className="text-4xl mb-3">{tab === 'static' ? '🖼️' : tab === 'narrado' ? '🎙️' : '🎬'}</p>
             <p className="text-sm">Clique em gerar para criar 1 {tab === 'static' ? 'peça estática (4:5)' : tab === 'narrado' ? 'vídeo narrado (9:16)' : 'vídeo com Mônica (9:16)'}</p>
-            <p className="text-xs mt-1 text-white/10">Cada geração é única — gere quantas vezes quiser</p>
+            <p className="text-xs mt-1 text-gray-300">Cada geração é única — gere quantas vezes quiser</p>
           </div>
         )}
       </main>
 
-      <footer className="border-t border-white/5 mt-16 py-6 text-center">
+      <footer className="border-t border-gray-200 mt-16 py-6 text-center">
         <img src="/logo-seazone-azul.png" alt="Seazone" className="h-5 mx-auto mb-2 opacity-30" />
-        <p className="text-white/15 text-[10px]">Marketing AI Hackathon 2026 — Máquina de Criativos</p>
+        <p className="text-gray-300 text-[10px]">Marketing AI Hackathon 2026 — Máquina de Criativos</p>
       </footer>
     </div>
   )

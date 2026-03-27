@@ -14,8 +14,8 @@
 
 body {
   font-family: 'Inter', 'Helvetica', sans-serif;
-  background: var(--sz-navy);
-  color: #fff;
+  background: #F5F5F5;
+  color: #1a1a1a;
 }
 
 /* Scrollbar */
