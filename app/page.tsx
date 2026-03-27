@@ -246,39 +246,24 @@ export default function Home() {
   const [tab, setTab] = useState<'static' | 'narrado' | 'monica'>('static')
   const [briefing, setBriefing] = useState(DEFAULT_BRIEFING)
   const [loading, setLoading] = useState(false)
-  const [fetchingBriefing, setFetchingBriefing] = useState(false)
   const [staticResult, setStaticResult] = useState<any>(null)
   const [narradoResult, setNarradoResult] = useState<any>(null)
   const [monicaResult, setMonicaResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [briefingUrl, setBriefingUrl] = useState('')
-  const [briefingSource, setBriefingSource] = useState<string>('padrão')
+  const [briefingSource, setBriefingSource] = useState<string>('Novo Campeche SPOT II')
+  const [showBriefingEdit, setShowBriefingEdit] = useState(false)
 
-  // FIX #1: Fetch briefing from Lovable URL
-  const fetchBriefing = async () => {
-    if (!briefingUrl.trim()) return
-    setFetchingBriefing(true)
-    setError(null)
-    try {
-      const res = await fetch('/api/fetch-briefing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: briefingUrl.trim() }),
-      })
-      const data = await res.json()
-      if (data.error) throw new Error(data.error)
-      if (data.briefing) {
-        setBriefing({ ...DEFAULT_BRIEFING, ...data.briefing })
-        setBriefingSource(data.briefing.empreendimento || briefingUrl)
-        // Clear previous results
-        setStaticResult(null)
-        setNarradoResult(null)
-        setMonicaResult(null)
-      }
-    } catch (err: any) {
-      setError('Erro ao puxar briefing: ' + err.message)
+  // FIX #1: Open Lovable URL + editable briefing fields
+  const openBriefing = () => {
+    if (briefingUrl.trim()) {
+      window.open(briefingUrl.trim(), '_blank')
+      setShowBriefingEdit(true)
     }
-    setFetchingBriefing(false)
+  }
+
+  const updateBriefingField = (field: string, value: string) => {
+    setBriefing((prev: any) => ({ ...prev, [field]: value }))
   }
 
   // Generate creative
@@ -326,19 +311,16 @@ export default function Home() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-        {/* FIX #1: Briefing URL Input - now functional */}
+        {/* FIX #1: Briefing - editable + Lovable link */}
         <div className="bg-white/5 rounded-xl p-5 border border-white/10">
           <div className="flex items-center gap-3 mb-4">
             <img src="/logo-spot-azul.png" alt="SPOT" className="h-10" />
             <div>
-              <h2 className="text-white font-bold">Briefing do Empreendimento</h2>
-              <p className="text-white/40 text-xs">
-                Cole o link do Lovable para puxar dados automaticamente
-                {briefingSource !== 'padrão' && <span className="text-[#22c55e] ml-2">✓ {briefingSource}</span>}
-              </p>
+              <h2 className="text-white font-bold">Briefing: {briefingSource}</h2>
+              <p className="text-white/40 text-xs">Cole o link do Lovable ou edite os dados diretamente</p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 mb-4">
             <input
               type="url"
               value={briefingUrl}
@@ -346,16 +328,43 @@ export default function Home() {
               placeholder="https://novocampechespotiilancamento.lovable.app/"
               className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm placeholder:text-white/20 outline-none focus:border-[#0055FF]/50"
             />
-            <button
-              onClick={fetchBriefing}
-              disabled={fetchingBriefing || !briefingUrl.trim()}
-              className={`px-4 py-2.5 rounded-lg text-sm font-bold transition-colors whitespace-nowrap ${
-                fetchingBriefing ? 'bg-white/10 text-white/30' : 'bg-[#0055FF] hover:bg-[#0044CC] text-white'
-              }`}
-            >
-              {fetchingBriefing ? '⏳ Puxando...' : '📥 Puxar'}
+            <button onClick={openBriefing} disabled={!briefingUrl.trim()}
+              className="bg-[#0055FF] hover:bg-[#0044CC] text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-colors whitespace-nowrap disabled:opacity-30">
+              🔗 Abrir e Editar
             </button>
           </div>
+          <button onClick={() => setShowBriefingEdit(!showBriefingEdit)}
+            className="text-white/40 text-xs hover:text-white/60 transition-colors">
+            {showBriefingEdit ? '▲ Fechar edição' : '▼ Editar dados do briefing'}
+          </button>
+          {showBriefingEdit && (
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              {[
+                { key: 'empreendimento', label: 'Empreendimento' },
+                { key: 'localizacao', label: 'Localização' },
+                { key: 'ticket_medio', label: 'Ticket Médio' },
+                { key: 'menor_cota', label: 'Menor Cota' },
+                { key: 'roi', label: 'ROI' },
+                { key: 'renda_liquida_ano', label: 'Renda Líquida/Ano' },
+                { key: 'renda_liquida_mes', label: 'Renda Líquida/Mês' },
+                { key: 'valorizacao', label: 'Valorização' },
+                { key: 'cotas', label: 'Cotas' },
+              ].map((f) => (
+                <div key={f.key}>
+                  <label className="text-white/30 text-[10px] uppercase tracking-widest">{f.label}</label>
+                  <input
+                    type="text"
+                    value={(briefing as any)[f.key] || ''}
+                    onChange={(e) => {
+                      updateBriefingField(f.key, e.target.value)
+                      if (f.key === 'empreendimento') setBriefingSource(e.target.value)
+                    }}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-[#0055FF]/50"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Briefing Cards */}
