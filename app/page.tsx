@@ -226,8 +226,6 @@ function VideoGenerator({ prompt }: { prompt: string }) {
       {error && <p className="text-[#FC6058] text-xs mt-2">Erro: {error}</p>}
     </div>
   )
-    </div>
-  )
 }
 
 /* ========== IMAGE GENERATOR (fal.ai Flux) ========== */
