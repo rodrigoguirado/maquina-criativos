@@ -39,8 +39,15 @@ export async function POST(req: NextRequest) {
 
 BRIEFING: ${JSON.stringify(briefing)}
 
+LAYOUT DA PEÇA (seguir exatamente):
+- TOPO: pill com localização do empreendimento
+- MEIO: foto de fundo do empreendimento (60% da peça)
+- ABAIXO DA FOTO: fundo navy escuro com headline impactante (palavras-chave em negrito)
+- NÚMERO DESTAQUE: valor financeiro grande dentro de cápsula arredondada (ex: "R$ 5.535 líquidos por mês*" ou "Invista a partir de R$ 335 mil")
+- RODAPÉ: texto de gestão + logos
+
 Responda APENAS com JSON válido (sem markdown, sem backticks, sem texto antes ou depois):
-{"headline":"frase principal de destaque (máx 12 palavras, impactante)","subheadline":"complemento com número ou dado concreto","cta":"texto do botão CTA (máx 4 palavras)","badge":"badge de urgência curto ou null","pontos_fortes":"abreviações (ex: L | ROI | Re)","fundo":"qual foto usar: fachada, fachada-lateral, aereo-pin, rooftop, praia, aereo-tag, rooftop-vista, fachada-close ou fachada-render","score":{"hook":8,"clareza":8,"argumento":8,"comercial":8,"tom":8}}`
+{"localizacao_pill":"texto curto da localização (ex: Campeche • Florianópolis)","headline":"frase impactante com palavras-chave entre ** para bold (ex: Airbnb **pé na areia** em Florianópolis)","numero_prefixo":"texto antes do número grande (ex: R$ ou Invista a partir de R$)","numero_destaque":"número grande (ex: 5.535 ou 335 mil)","numero_sufixo":"texto depois do número (ex: líquidos por mês* ou )","texto_gestao":"frase de gestão (ex: Gestão **operacional e estratégica completa** Seazone)","fundo":"qual foto usar: fachada, fachada-lateral, aereo-pin, rooftop, praia, aereo-tag, rooftop-vista, fachada-close ou fachada-render","badge":"badge de urgência curto ou null","score":{"hook":8,"clareza":8,"argumento":8,"comercial":8,"tom":8}}`
     } else if (type === 'video-narrado') {
       userPrompt = `Com base neste briefing, gere EXATAMENTE 1 roteiro de vídeo narrado (formato Reels 9:16, 15-30 segundos).
 

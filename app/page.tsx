@@ -66,42 +66,100 @@ function ScoreCard({ score }: { score: any }) {
   )
 }
 
-/* ========== STATIC PREVIEW ========== */
-function StaticPreview({ data }: { data: any }) {
+/* ========== STATIC PREVIEW (matches real Seazone ads) ========== */
+function StaticPreview({ data, briefing }: { data: any; briefing: any }) {
   const bgImage = FUNDOS[data.fundo] || FUNDOS['fachada']
+
+  // Parse bold markers ** **
+  const renderBold = (text: string) => {
+    if (!text) return text
+    const parts = text.split(/\*\*(.*?)\*\*/g)
+    return parts.map((part, i) => i % 2 === 1 ? <strong key={i}>{part}</strong> : part)
+  }
+
+  const downloadImage = () => {
+    const el = document.getElementById('static-preview')
+    if (!el) return
+    // Use html2canvas-like approach: open in new window for screenshot
+    const win = window.open('', '_blank')
+    if (!win) return
+    win.document.write(`<html><body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#000;">`)
+    win.document.write(el.outerHTML)
+    win.document.write(`<p style="color:white;text-align:center;margin-top:20px;font-family:sans-serif;">Clique com botão direito na imagem → "Salvar como" para baixar</p>`)
+    win.document.write(`</body></html>`)
+  }
+
   return (
-    <div className="w-full max-w-[400px] mx-auto">
-      <div className="relative w-full overflow-hidden rounded-lg" style={{ aspectRatio: '4/5' }}>
-        <img src={bgImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/50 to-black/80" />
-        <div className="absolute inset-0 flex flex-col justify-between p-6">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <img src="/logo-seazone-branco.png" alt="Seazone" className="h-6 object-contain" />
-              <img src="/logo-spot-branco.png" alt="SPOT" className="h-8 object-contain" />
-            </div>
-            {data.badge && (
-              <span className="bg-[#FC6058] text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                {data.badge}
-              </span>
-            )}
-          </div>
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <div className="inline-flex items-center gap-1 text-white/80 text-xs mb-3">
-                <span>📍</span><span>Campeche, Florianópolis</span>
-              </div>
-              <h2 className="text-white text-2xl font-bold leading-tight mb-3 drop-shadow-lg">{data.headline}</h2>
-              <p className="text-white/90 text-sm font-medium">{data.subheadline}</p>
-            </div>
-          </div>
-          <div className="space-y-3">
-            {data.pontos_fortes && <div className="text-white/50 text-[10px] text-center tracking-widest font-medium">{data.pontos_fortes}</div>}
-            <button className="w-full bg-[#0055FF] hover:bg-[#0044CC] text-white font-bold py-3 rounded-lg text-sm transition-colors">{data.cta || 'Saiba mais'}</button>
-            <p className="text-white/30 text-[7px] leading-tight text-center">{DEFAULT_BRIEFING.disclaimer}</p>
+    <div className="w-full max-w-[420px] mx-auto space-y-3">
+      <div id="static-preview" className="relative w-full overflow-hidden rounded-xl" style={{ aspectRatio: '4/5', background: '#00143D' }}>
+
+        {/* TOP: Location pill */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20">
+          <div className="bg-white rounded-full px-5 py-2 flex items-center gap-2 shadow-lg">
+            <span className="text-[#FC6058] text-sm">📍</span>
+            <span className="text-[#00143D] text-xs font-semibold">{data.localizacao_pill || 'Campeche • Florianópolis'}</span>
           </div>
         </div>
+
+        {/* Badge */}
+        {data.badge && (
+          <div className="absolute top-4 right-4 z-20">
+            <span className="bg-[#FC6058] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg uppercase tracking-wider shadow-lg">
+              {data.badge}
+            </span>
+          </div>
+        )}
+
+        {/* PHOTO: top 58% */}
+        <div className="absolute top-0 left-0 right-0" style={{ height: '58%' }}>
+          <img src={bgImage} alt="" className="w-full h-full object-cover" />
+          <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#00143D] to-transparent" />
+        </div>
+
+        {/* BOTTOM: Navy section with content */}
+        <div className="absolute bottom-0 left-0 right-0 flex flex-col justify-end px-6 pb-4" style={{ height: '48%' }}>
+
+          {/* Headline */}
+          <div className="text-center mb-5">
+            <p className="text-white text-[22px] leading-snug" style={{ fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
+              {renderBold(data.headline || '')}
+            </p>
+          </div>
+
+          {/* Number capsule */}
+          <div className="w-full mb-5">
+            <div className="border border-[#6593FF]/30 rounded-[32px] py-4 px-8 flex items-baseline justify-center gap-1" style={{ background: 'linear-gradient(135deg, rgba(0,30,80,0.95) 0%, rgba(0,20,61,0.8) 100%)' }}>
+              <span className="text-white/60 text-base font-light">{data.numero_prefixo || 'R$'}</span>
+              <span className="text-white font-black tracking-tight" style={{ fontSize: '48px', lineHeight: '1' }}>{data.numero_destaque || '5.535'}</span>
+              <span className="text-white/60 text-sm font-light leading-tight ml-1 whitespace-pre-line">{data.numero_sufixo || 'líquidos\npor mês*'}</span>
+            </div>
+          </div>
+
+          {/* Footer: gestao + logos */}
+          <div className="w-full flex items-center justify-between mb-2.5">
+            <div className="flex-1 pr-3">
+              <p className="text-white/70 text-[11px] leading-tight" style={{ fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
+                {renderBold(data.texto_gestao || 'Gestão **operacional e estratégica completa** Seazone')}
+              </p>
+            </div>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <img src="/logo-spot-branco.png" alt="SPOT" className="h-9 object-contain" />
+              <img src="/logo-seazone-branco.png" alt="Seazone" className="h-5 object-contain" />
+            </div>
+          </div>
+
+          {/* Disclaimer */}
+          <p className="text-white/15 text-[5.5px] leading-tight text-left w-full">
+            {briefing?.disclaimer || DEFAULT_BRIEFING.disclaimer}
+          </p>
+        </div>
       </div>
+
+      {/* Download button */}
+      <button onClick={downloadImage}
+        className="w-full py-2.5 rounded-lg text-xs font-bold bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border border-white/10 transition-all">
+        💾 Baixar Peça Estática
+      </button>
     </div>
   )
 }
@@ -485,7 +543,7 @@ export default function Home() {
             {/* FIX #2: Static with working image gen */}
             {tab === 'static' && staticResult && (
               <>
-                <StaticPreview data={staticResult} />
+                <StaticPreview data={staticResult} briefing={briefing} />
                 <ScoreCard score={staticResult.score} />
                 <ImageGenerator fundo={staticResult.fundo || 'fachada'} />
               </>
