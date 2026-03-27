@@ -204,31 +204,75 @@ function VideoScript({ data, type }: { data: any; type: 'narrado' | 'monica' }) 
   )
 }
 
-/* ========== VIDEO GENERATOR (fal.ai Kling via SDK) ========== */
+/* ========== VIDEO GENERATOR (fal.ai Kling) with polling ========== */
 function VideoGenerator({ prompt }: { prompt: string }) {
   const [generating, setGenerating] = useState(false)
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [statusMsg, setStatusMsg] = useState('')
 
   const generate = async () => {
     setGenerating(true)
     setError(null)
     setVideoUrl(null)
+    setStatusMsg('Enviando para fal.ai...')
 
     try {
-      const res = await fetch('/api/generate-video', {
+      // Step 1: Submit the job
+      const submitRes = await fetch('/api/generate-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt }),
       })
-      const data = await res.json()
-      if (data.error) throw new Error(data.error)
+      const submitData = await submitRes.json()
+      
+      if (submitData.error) throw new Error(submitData.error)
 
-      if (data.url) {
-        setVideoUrl(data.url)
-      } else {
-        throw new Error('URL do vídeo não retornada')
+      // If video came back directly
+      if (submitData.status === 'COMPLETED' && submitData.url) {
+        setVideoUrl(submitData.url)
+        setGenerating(false)
+        return
       }
+
+      // Step 2: Poll for completion
+      if (submitData.request_id) {
+        const reqId = submitData.request_id
+        setStatusMsg('Vídeo na fila... aguardando geração')
+        
+        for (let i = 0; i < 60; i++) {
+          await new Promise(r => setTimeout(r, 5000)) // wait 5s between polls
+          setStatusMsg(`Gerando vídeo... ${(i + 1) * 5}s`)
+
+          const pollRes = await fetch('/api/generate-video', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ request_id: reqId }),
+          })
+          const pollData = await pollRes.json()
+
+          if (pollData.error) throw new Error(pollData.error)
+
+          if (pollData.status === 'COMPLETED' && pollData.url) {
+            setVideoUrl(pollData.url)
+            setGenerating(false)
+            return
+          }
+
+          if (pollData.status === 'FAILED') {
+            throw new Error(pollData.error || 'Geração de vídeo falhou')
+          }
+
+          // Still processing, continue polling
+          if (pollData.status === 'IN_QUEUE' || pollData.status === 'IN_PROGRESS') {
+            setStatusMsg(`Gerando vídeo... ${(i + 1) * 5}s (${pollData.status})`)
+          }
+        }
+        
+        throw new Error('Timeout após 5 minutos — tente novamente')
+      }
+
+      throw new Error('Resposta inesperada do servidor')
     } catch (err: any) {
       setError(err.message)
     }
@@ -240,7 +284,7 @@ function VideoGenerator({ prompt }: { prompt: string }) {
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-semibold tracking-widest text-gray-400">GERAR VÍDEO COM IA</span>
         <button onClick={generate} disabled={generating}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${generating ? 'bg-gray-200 text-gray-400 cursor-wait generating' : 'bg-[#FC6058] hover:bg-[#e5544d] text-white'}`}>
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${generating ? 'bg-gray-200 text-gray-400 cursor-wait' : 'bg-[#FC6058] hover:bg-[#e5544d] text-white'}`}>
           {generating ? '⏳ Gerando...' : '🎬 Gerar com Kling'}
         </button>
       </div>
@@ -248,7 +292,7 @@ function VideoGenerator({ prompt }: { prompt: string }) {
       {generating && (
         <div className="flex items-center gap-3 py-8 justify-center">
           <div className="spinner" />
-          <span className="text-gray-400 text-sm">Gerando vídeo com IA... pode levar 2-5 min</span>
+          <span className="text-gray-400 text-sm">{statusMsg}</span>
         </div>
       )}
       {videoUrl && <video src={videoUrl} controls className="w-full rounded-lg max-h-[500px]" />}
